@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ledgerflow_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-ledgerflow}
+      POSTGRES_PASSWORD: ${DB_PASS:-secret}
+      POSTGRES_DB: ${DB_NAME:-ledgerflow}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ledgerflow_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ledgerflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: ledgerflow_backend
+    volumes:
+      - ./apps/backend:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-ledgerflow}:${DB_PASS:-secret}@postgres:5432/${DB_NAME:-ledgerflow}
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ledgerflow_net
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: ledgerflow_frontend
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Important for Windows/WSL hot reload
+    networks:
+      - ledgerflow_net
+    command: npm run dev -- --host
+
+  nginx:
+    image: nginx:alpine
+    container_name: ledgerflow_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ledgerflow_net
+
+networks:
+  ledgerflow_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
