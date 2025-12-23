@@ -32,7 +32,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-ledgerflow}:${DB_PASS:-secret}@postgres:5432/${DB_NAME:-ledgerflow}
+      - DATABASE_URL=postgresql://ledgerflow:secret@postgres:5432/ledgerflow
       - NODE_ENV=development
     depends_on:
       postgres:

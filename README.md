@@ -41,3 +41,10 @@ _Note: The first run will take some time to download images and install dependen
 - `apps/backend`: NestJS application.
 - `apps/frontend`: React application.
 - `docker/`: Infrastructure configuration (Nginx, etc).
+
+## Auth Endpoints (Stage 3)
+- `POST /api/auth/register`: { email, password, name }
+- `POST /api/auth/login`: { email, password }
+- `POST /api/auth/refresh`: (Requires Cookie `refresh_token`)
+- `POST /api/auth/logout`: (Requires Access Token)
+- `GET /api/auth/me`: (Requires Access Token)
